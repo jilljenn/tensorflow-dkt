@@ -27,25 +27,34 @@ def run(args):
     lr = 0.4
     lr_decay = 0.92
     # run epoch
-    for epoch in range(10):
+    for epoch in range(1):
         # train
         model.assign_lr(sess, lr * lr_decay ** epoch)
         overall_loss = 0
         train_generator.shuffle()
         st = time.time()
+        c = 0
         while not train_generator.end:
             input_x, target_id, target_correctness, seqs_len, max_len = train_generator.next_batch()
-            overall_loss += model.step(sess, input_x, target_id, target_correctness, seqs_len, is_train=True)
-            print "\r idx:{0}, overall_loss:{1}, time spent:{2}s".format(train_generator.pos, overall_loss,
-                                                                         time.time() - st),
+            if c == 0:
+                print(input_x, target_id, target_correctness, seqs_len, max_len)
+            c += 1
+            #overall_loss += model.step(sess, input_x, target_id, target_correctness, seqs_len, is_train=True)
+            print ("\r idx:{0}, overall_loss:{1}, time spent:{2}s".format(train_generator.pos, overall_loss,
+                                                                                     time.time() - st))
             sys.stdout.flush()
 
         # test
         test_generator.reset()
         preds, binary_preds, targets = list(), list(), list()
+        c = 0
         while not test_generator.end:
             input_x, target_id, target_correctness, seqs_len, max_len = test_generator.next_batch()
             binary_pred, pred, _ = model.step(sess, input_x, target_id, target_correctness, seqs_len, is_train=False)
+            if c == 0:
+                print(input_x, target_id, target_correctness, seqs_len, max_len)
+                print(binary_pred, pred, _)
+            c += 1
             for seq_idx, seq_len in enumerate(seqs_len):
                 preds.append(pred[seq_idx, 0:seq_len])
                 binary_preds.append(binary_pred[seq_idx, 0:seq_len])
@@ -57,7 +66,7 @@ def run(args):
         auc_value = roc_auc_score(targets, preds)
         accuracy = accuracy_score(targets, binary_preds)
         precision, recall, f_score, _ = precision_recall_fscore_support(targets, binary_preds)
-        print "\n auc={0}, accuracy={1}, precision={2}, recall={3}".format(auc_value, accuracy, precision, recall)
+        print ("\n auc={0}, accuracy={1}, precision={2}, recall={3}".format(auc_value, accuracy, precision, recall))
 
 
 if __name__ == "__main__":
